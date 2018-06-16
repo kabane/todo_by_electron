@@ -1,52 +1,60 @@
 <template>
-  <div>
-    <section class="todo_form">
-      <p>Todoを入力してください</p>
-      <input v-model="new_task" type="text" class="todo_form_field">
-      <button v-on:click="add()">作成</button>
-    </section>
-    <active-todo :todos="active_todos" v-on:done="done"></active-todo>
-    <done-todo :todos="done_todos"></done-todo>
+  <div :id="todo.id" v-bind:class="{active: todo.is_active}">
+    <p>{{ todo.name }}</p>
+    <p class="todo_elapsed_time">{{ this.h + ':' + this.m + ':' + this.s  }}</p>
+    <button v-on:click="start()">開始</button>
+    <button v-on:click="stop()">中断</button>
+    <button v-on:click="done()">完了</button>
   </div>
 </template>
 
 <script>
-  import ActiveTodo from './ActiveTodo.vue'
-  import DoneTodo from './DoneTodo.vue'
   export default {
-    name: 'todo-page',
-    components: {
-      ActiveTodo,
-      DoneTodo
-    },
+    name: 'todo',
+    props: [
+      'todo'
+    ],
     data: function () {
       return {
-        new_task: null,
-        active_todos: [],
-        done_todos: []
+        todo: this.todo,
+        interval_id: null,
+        h: '00',
+        m: '00',
+        s: '00'
       }
     },
     methods: {
-      open (link) {
-        this.$electron.shell.openExternal(link)
-      },
-      add: function () {
+      start () {
         var _this = this
-        var newTodo = {
-          task: _this.new_task,
-          isChecked: false
-        }
-        this.active_todos.push(newTodo)
-        this.new_task = null
+        this.interval_id = setInterval(function () {
+          var elapsedTime = _this.todo.elapsed_time++
+
+          _this.h = _this.get_hour_str(elapsedTime)
+          _this.m = _this.get_min_str(elapsedTime)
+          _this.s = _this.get_sec_str(elapsedTime)
+        }, 1000)
       },
-      done: function (id) {
-        var doneTodo = this.active_todos.splice(id, 1)
-        this.done_todos.push(doneTodo[0])
+      stop () {
+        clearInterval(this.interval_id)
+      },
+      done () {
+        this.$emit('done')
+      },
+      get_hour_str (time) {
+        var h = time / 3600 | 0
+        return h < 10 ? '0' + h : h
+      },
+      get_min_str (time) {
+        var min = time % 3600 / 60 | 0
+        return min < 10 ? '0' + min : min
+      },
+      get_sec_str (time) {
+        var sec = time % 60
+        return sec < 10 ? '0' + sec : sec
       }
     }
   }
 </script>
 
 <style>
-
 </style>
